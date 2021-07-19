@@ -1,10 +1,9 @@
-import argparse
+import argparse, os, nltk
 
 from deep.gectorPredict.utils.helpers import read_lines
 from deep.gectorPredict.gector.gec_model import GecBERTModel
+from kernel.settings import BASE_DIR
 
-import nltk
-nltk.download('punkt') # download only at first time
 
 
 def predict_for_file(input_file, output_file, model, batch_size=32):
@@ -30,7 +29,7 @@ def predict_for_file(input_file, output_file, model, batch_size=32):
 
 
 def predict_for_paragraph(input_paragraph, model, batch_size=32):
-    sent_tokenizer = nltk.data.load('/home/ernany/nltk_data/' + 'tokenizers/punkt/portuguese.pickle')
+    sent_tokenizer = nltk.data.load(os.path.join(BASE_DIR, 'deep/nltk_data/tokenizers/punkt/portuguese.pickle'))
     test_data = sent_tokenizer.tokenize(input_paragraph)
     split_positions = [x for x in sent_tokenizer.span_tokenize(input_paragraph)]
     predictions = []

@@ -135,18 +135,6 @@ dmypy.json
 *.sh
 
 # data > 100 mb
-preprocessable_files/wiki-sentences.txt
-MODEL_DIR/
-files/dual_files/corr_sentences.txt
-files/dual_files/incorr_sentences.txt
-files/dual_files/corr_sentences.txt.lock
-files/dual_files/incorr_sentences.txt.lock
-files/neural_files/inputs_labels.txt
-files/neural_files/train.txt
-files/neural_files/test.txt
-files/neural_files/train_small.txt
-files/neural_files/test_small.txt
-files/neural_files/train_smallest.txt
-files/neural_files/test_smallest.txt
-files/neural_files/train_30.txt
-files/neural_files/test_30.txt
+deep/gectorPredict/MODEL_DIR/
+deep/bert-base-portuguese-cased/flax_model.msgpack
+deep/bert-base-portuguese-cased/pytorch_model.bin

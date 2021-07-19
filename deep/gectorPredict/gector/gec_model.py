@@ -18,6 +18,8 @@ from deep.gectorPredict.gector.seq2labels_model import Seq2Labels
 from deep.gectorPredict.gector.wordpiece_indexer import PretrainedBertIndexer
 from deep.gectorPredict.utils.helpers import PAD, UNK, get_target_sent_by_edits, START_TOKEN
 
+from kernel.settings import BASE_DIR
+
 logging.getLogger("werkzeug").setLevel(logging.ERROR)
 logger = logging.getLogger(__file__)
 
@@ -46,8 +48,8 @@ def get_weights_name(transformer_name, lowercase):
     if transformer_name == 'xlnet':
         return 'xlnet-base-cased'
     if transformer_name == 'bertimbau':
-        return 'neuralmind/bert-base-portuguese-cased'
-
+        #return 'neuralmind/bert-base-portuguese-cased'
+        return os.path.join(BASE_DIR, 'deep/bert-base-portuguese-cased')
 
 class GecBERTModel(object):
     def __init__(self, vocab_path=None, model_paths=None,

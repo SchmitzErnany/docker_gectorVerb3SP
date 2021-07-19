@@ -1,6 +1,8 @@
 import os
 from pathlib import Path
 
+from kernel.settings import BASE_DIR
+
 
 VOCAB_DIR = Path(__file__).resolve().parent.parent / "data"
 PAD = "@@PADDING@@"
@@ -202,4 +204,5 @@ def get_weights_name(transformer_name, lowercase):
     if transformer_name == 'xlnet':
         return 'xlnet-base-cased'
     if transformer_name == 'bertimbau':
-        return 'neuralmind/bert-base-portuguese-cased'
+        #return 'neuralmind/bert-base-portuguese-cased'
+        return os.path.join(BASE_DIR, 'deep/bert-base-portuguese-cased')

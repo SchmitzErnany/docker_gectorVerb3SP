@@ -18,8 +18,7 @@ WORKDIR /app1
 
 # Install any needed packages specified in requirements.txt
 COPY requirements.txt /app1
-RUN pip3 install --upgrade pip
-RUN pip3 install -r requirements.txt
+RUN apt-get update && apt-get install -y build-essential && pip3 install --upgrade pip && pip3 install -r requirements.txt
 
 # Run app.py when the container launches
 COPY  .  /app1/
