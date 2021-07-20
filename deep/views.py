@@ -4,12 +4,11 @@ from django.http import JsonResponse
 import os
 from kernel.settings import BASE_DIR
 
-
 ### Initializing the model
 
 args = {'vocab_path':os.path.join(BASE_DIR, 'deep/gectorPredict/MODEL_DIR/vocabulary'), 'model_path':[os.path.join(BASE_DIR, 'deep/gectorPredict/MODEL_DIR/best.th')],
-        'max_len':50,'min_len':3,'iteration_count':5,'min_error_probability':0.0,
-        'lowercase_tokens':0,'transformer_model':'bertimbau','special_tokens_fix':1,'additional_confidence':0,
+        'max_len':50,'min_len':3,'iteration_count':5,'min_error_probability':0,
+        'lowercase_tokens':0,'transformer_model':'bertimbau','special_tokens_fix':1,'additional_confidence':0.6,
         'is_ensemble':0,'weights':None}
 
 model = GecBERTModel(model_paths=args['model_path'],
@@ -27,9 +26,13 @@ model = GecBERTModel(model_paths=args['model_path'],
 
 def output(request):
 	# obtaining the query parameter 'text'
-	request_string = str(request.GET.get('text'))
+	if request.method == 'GET':
+		request_string = str(request.GET.get('text'))
+	if request.method == 'POST':
+		request_string = str(request.POST.get('text'))
+
 	# making inference
-	repl = predict_for_paragraph(request_string, model, batch_size=32)
+	repl = predict_for_paragraph(request_string, model)
 
 	# creating a pretty JSON for exporting
 	json_output = dict()

@@ -69,7 +69,7 @@ def predict_for_paragraph(input_paragraph, model, batch_size=32):
                 pos += len(ev_past_token + ' ')
             if ev_tok != out_tok:
                 length = len(ev_tok)
-                repl[ev_tok] = (pos, length, out_tok)
+                repl[(ev_tok,pos)] = (pos, length, out_tok)
             
             ev_past_token = ev_tok
 
