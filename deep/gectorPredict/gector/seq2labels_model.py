@@ -149,7 +149,7 @@ class Seq2Labels(Model):
                        "logits_d_tags": logits_d,
                        "class_probabilities_labels": class_probabilities_labels,
                        "class_probabilities_d_tags": class_probabilities_d,
-                       "max_error_probability": incorr_prob}
+                       "max_error_probability": error_probs}#incorr_prob}
         if labels is not None and d_tags is not None:
             loss_labels = sequence_cross_entropy_with_logits(logits_labels, labels, mask,
                                                              label_smoothing=self.label_smoothing)

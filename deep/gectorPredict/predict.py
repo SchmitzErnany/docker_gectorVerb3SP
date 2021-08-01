@@ -132,7 +132,7 @@ if __name__ == '__main__':
                         help='Whether to lowercase tokens.',
                         default=0)
     parser.add_argument('--transformer_model',
-                        choices=['bert', 'gpt2', 'transformerxl', 'xlnet', 'distilbert', 'roberta', 'albert', 'bertimbau'],
+                        choices=['bert', 'gpt2', 'transformerxl', 'xlnet', 'distilbert', 'roberta', 'albert', 'bertimbaubase', 'bertimbaularge'],
                         help='Name of the transformer model.',
                         default='roberta')
     parser.add_argument('--iteration_count',

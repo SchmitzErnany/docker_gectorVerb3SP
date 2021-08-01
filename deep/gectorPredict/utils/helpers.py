@@ -203,6 +203,7 @@ def get_weights_name(transformer_name, lowercase):
         return 'transfo-xl-wt103'
     if transformer_name == 'xlnet':
         return 'xlnet-base-cased'
-    if transformer_name == 'bertimbau':
-        #return 'neuralmind/bert-base-portuguese-cased'
+    if transformer_name == 'bertimbaubase':
         return os.path.join(BASE_DIR, 'deep/bert-base-portuguese-cased')
+    if transformer_name == 'bertimbaularge':
+        return 'neuralmind/bert-large-portuguese-cased'
