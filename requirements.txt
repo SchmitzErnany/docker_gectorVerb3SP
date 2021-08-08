@@ -6,4 +6,5 @@ transformers==2.2.2
 sentencepiece==0.1.91
 overrides==4.1.2
 scikit-learn==0.22.1
+pytokenizations==0.7.2
 #torch==1.9.0

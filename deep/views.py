@@ -7,8 +7,8 @@ from kernel.settings import BASE_DIR
 ### Initializing the model
 
 args = {'vocab_path':os.path.join(BASE_DIR, 'deep/gectorPredict/MODEL_DIR/vocabulary'), 'model_path':[os.path.join(BASE_DIR, 'deep/gectorPredict/MODEL_DIR/best.th')],
-        'max_len':50,'min_len':3,'iteration_count':5,'min_error_probability':0.7,
-        'lowercase_tokens':0,'transformer_model':'bertimbaubase','special_tokens_fix':1,'additional_confidence':0.3,
+        'max_len':50,'min_len':3,'iteration_count':5,'min_error_probability':0.7,#float(os.environ.get('min_err_prob')),
+        'lowercase_tokens':0,'transformer_model':'bertimbaubase','special_tokens_fix':1,'additional_confidence':0.3,#float(os.environ.get('add_conf')),
         'is_ensemble':0,'weights':None}
 
 model = GecBERTModel(model_paths=args['model_path'],
@@ -32,7 +32,7 @@ def output(request):
 		request_string = str(request.POST.get('text'))
 
 	# making inference
-	repl = predict_for_paragraph(request_string, model)
+	repl = predict_for_paragraph(request_string, model, tokenizer_method='nltk')#os.environ.get('tokenizer_method'))
 
 	# creating a pretty JSON for exporting
 	json_output = dict()
