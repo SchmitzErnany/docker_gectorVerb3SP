@@ -227,16 +227,18 @@ class GecBERTModel(object):
         idx = max_vals[1].tolist()
         return probs, idx, error_probs.tolist()
 
-    def update_final_batch(self, final_batch, pred_ids, pred_batch,
+    def update_final_batch(self, final_batch, final_labels, pred_ids, pred_batch, pred_labels,
                            prev_preds_dict):
         new_pred_ids = []
         total_updated = 0
         for i, orig_id in enumerate(pred_ids):
-            orig = final_batch[orig_id]
-            pred = pred_batch[i]
+            orig = final_batch[orig_id]; orig_label = final_labels[orig_id]
+            pred = pred_batch[i]; pred_label = pred_labels[i]
             prev_preds = prev_preds_dict[orig_id]
             if orig != pred and pred not in prev_preds:
                 final_batch[orig_id] = pred
+                #print(pred_label, orig_label, len(pred_label), len(orig_label))
+                final_labels[orig_id] = [(pred_label[j] + orig_label[j]) for j in range(len(pred_label))]
                 new_pred_ids.append(orig_id)
                 prev_preds_dict[orig_id].append(pred)
                 total_updated += 1
@@ -246,12 +248,12 @@ class GecBERTModel(object):
                 total_updated += 1
             else:
                 continue
-        return final_batch, new_pred_ids, total_updated
+        return final_batch, final_labels, new_pred_ids, total_updated
 
     def postprocess_batch(self, batch, all_probabilities, all_idxs,
                           error_probs,
                           max_len=50):
-        all_results = []
+        all_results = []; all_transforms = [];
         noop_index = self.vocab.get_token_index("$KEEP", "labels")
         for tokens, probabilities, idxs, error_prob in zip(batch,
                                                            all_probabilities,
@@ -263,11 +265,13 @@ class GecBERTModel(object):
             # skip whole sentences if there no errors
             if max(idxs) == 0:
                 all_results.append(tokens)
+                all_transforms.append(['']*len(idxs))
                 continue
 
             # skip whole sentence if probability of correctness is not high
             if max(error_prob) < self.min_error_probability:
                 all_results.append(tokens)
+                all_transforms.append(['']*len(idxs))
                 continue
 
             for i in range(length + 1):
@@ -289,16 +293,28 @@ class GecBERTModel(object):
                     continue
 
                 edits.append(action)
-            all_results.append(get_target_sent_by_edits(tokens, edits))
-        return all_results
+
+            possible_repls = get_target_sent_by_edits(tokens, edits)
+            all_results.append(possible_repls)
+
+            transform = ['']*len(idxs)
+            for j, edit in enumerate(edits):
+                if edit:
+                    transform[edit[1]] = edit[2]
+            all_transforms.append(transform)
+
+        return all_results, all_transforms
 
     def handle_batch(self, full_batch):
         """
         Handle batch of requests.
         """
         final_batch = full_batch[:]
+        lengths = [len(batch) for batch in full_batch]
+        final_labels = [['']*(max(lengths)+1) for length in lengths]
         batch_size = len(full_batch)
         prev_preds_dict = {i: [final_batch[i]] for i in range(len(final_batch))}
+        #prev_idxs_dict = {i: [final_idxs[i]] for i in range(len(final_idxs))}
         short_ids = [i for i in range(len(full_batch))
                      if len(full_batch[i]) < self.min_len]
         pred_ids = [i for i in range(len(full_batch)) if i not in short_ids]
@@ -306,6 +322,7 @@ class GecBERTModel(object):
 
         for n_iter in range(self.iterations):
             orig_batch = [final_batch[i] for i in pred_ids]
+            orig_labels = [final_labels[i] for i in pred_ids]
 
             sequences = self.preprocess(orig_batch)
 
@@ -313,17 +330,17 @@ class GecBERTModel(object):
                 break
             probabilities, idxs, error_probs = self.predict(sequences)
 
-            pred_batch = self.postprocess_batch(orig_batch, probabilities,
+            pred_batch, pred_labels = self.postprocess_batch(orig_batch, probabilities,
                                                 idxs, error_probs)
             if self.log:
                 print(f"Iteration {n_iter + 1}. Predicted {round(100*len(pred_ids)/batch_size, 1)}% of sentences.")
 
-            final_batch, pred_ids, cnt = \
-                self.update_final_batch(final_batch, pred_ids, pred_batch,
+            final_batch, final_labels, pred_ids, cnt = \
+                self.update_final_batch(final_batch, final_labels, pred_ids, pred_batch, pred_labels,
                                         prev_preds_dict)
             total_updates += cnt
 
             if not pred_ids:
                 break
 
-        return final_batch, total_updates
+        return final_batch, final_labels, total_updates

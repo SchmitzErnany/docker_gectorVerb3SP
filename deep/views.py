@@ -6,9 +6,17 @@ from kernel.settings import BASE_DIR
 
 ### Initializing the model
 
+MIN_ERR_PROB = 0.7; ADD_CONF = 0.3; TOKEN_METH = 'spacy';
+if os.environ.get('min_err_prob'):
+	MIN_ERR_PROB = float(os.environ.get('min_err_prob'))
+if os.environ.get('add_conf'):
+	ADD_CONF = float(os.environ.get('add_conf'))
+if os.environ.get('tokenizer_method'):
+	TOKEN_METH = str(os.environ.get('tokenizer_method'))
+
 args = {'vocab_path':os.path.join(BASE_DIR, 'deep/gectorPredict/MODEL_DIR/vocabulary'), 'model_path':[os.path.join(BASE_DIR, 'deep/gectorPredict/MODEL_DIR/best.th')],
-        'max_len':50,'min_len':3,'iteration_count':5,'min_error_probability':0.7,#float(os.environ.get('min_err_prob')),
-        'lowercase_tokens':0,'transformer_model':'bertimbaubase','special_tokens_fix':1,'additional_confidence':0.3,#float(os.environ.get('add_conf')),
+        'max_len':50,'min_len':3,'iteration_count':5,'min_error_probability':MIN_ERR_PROB,
+        'lowercase_tokens':0,'transformer_model':'bertimbaubase','special_tokens_fix':1,'additional_confidence':ADD_CONF,
         'is_ensemble':0,'weights':None}
 
 model = GecBERTModel(model_paths=args['model_path'],
@@ -32,11 +40,11 @@ def output(request):
 		request_string = str(request.POST.get('text'))
 
 	# making inference
-	repl = predict_for_paragraph(request_string, model, tokenizer_method='nltk')#os.environ.get('tokenizer_method'))
+	repl = predict_for_paragraph(request_string, model, tokenizer_method=TOKEN_METH)
 
 	# creating a pretty JSON for exporting
 	json_output = dict()
-	json_output['software'] = {'deep3SPVersion':'0.5'}
+	json_output['software'] = {'deep3SPVersion':'0.6'}
 	json_output['warnings'] = {'incompleteResults':False}
 	json_output['language'] = {'name':'Portuguese (Deep SymFree)'}
 	json_output['matches'] = []

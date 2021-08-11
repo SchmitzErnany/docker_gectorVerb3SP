@@ -1,4 +1,4 @@
-import argparse, os
+import argparse, re, os
 
 from deep.gectorPredict.utils.helpers import read_lines
 from deep.gectorPredict.gector.gec_model import GecBERTModel
@@ -9,6 +9,8 @@ from nltk.tokenize.util import align_tokens
 if os.path.join(BASE_DIR, 'deep/nltk_data') not in nltk.data.path:
     nltk.data.path.append(os.path.join(BASE_DIR, 'deep/nltk_data'))
 
+import spacy
+spacy_tokenizer = spacy.load(os.path.join(BASE_DIR, 'deep/pt_core_news_sm'))
 
 
 def predict_for_file(input_file, output_file, model, batch_size=32):
@@ -19,12 +21,12 @@ def predict_for_file(input_file, output_file, model, batch_size=32):
     for sent in test_data:
         batch.append(sent.split())
         if len(batch) == batch_size:
-            preds, cnt = model.handle_batch(batch)
+            preds, _ , cnt = model.handle_batch(batch)
             predictions.extend(preds)
             cnt_corrections += cnt
             batch = []
     if batch:
-        preds, cnt = model.handle_batch(batch)
+        preds, _ , cnt = model.handle_batch(batch)
         predictions.extend(preds)
         cnt_corrections += cnt
 
@@ -33,8 +35,17 @@ def predict_for_file(input_file, output_file, model, batch_size=32):
     return cnt_corrections, [" ".join(x) for x in predictions]
 
 
+# if True, the repl entry is added, otherwise it is not.
+def removeFalsePositives(sent_label, tokens_in, regexp_dic):
+    for key in regexp_dic:
+        label_regex = regexp_dic[key][0]
+        pronoun_regex = regexp_dic[key][1]
+        if bool(label_regex.search(sent_label)) and all(not bool(pronoun_regex.search(tok)) for tok in tokens_in):
+            return False
+    return True
+
+
 def predict_for_paragraph(input_paragraph, model, batch_size=32, tokenizer_method='split'):
-    #sent_tokenizer = nltk.data.load(os.path.join(BASE_DIR, 'deep/nltk_data/tokenizers/punkt/portuguese.pickle'))
     test_data = nltk.tokenize.sent_tokenize(input_paragraph, language='portuguese')
     split_positions = [x for x in align_tokens(test_data, input_paragraph)]
     predictions = []; diffs = []; tokenized_sentences = []; spans = [];
@@ -45,12 +56,13 @@ def predict_for_paragraph(input_paragraph, model, batch_size=32, tokenizer_metho
     for sent in test_data:
         if tokenizer_method == 'split':
             tokenized_sentence = sent.split()
-        elif tokenizer_method == 'nltk':
-            tokenized_sentence = nltk.tokenize.word_tokenize(sent, language='portuguese')
+        elif tokenizer_method == 'spacy':
+            tokenized_sentence = [str(tok) for tok in spacy_tokenizer(sent)]
+
         tokenized_sentences.append(tokenized_sentence)
-        print(tokenized_sentences)
         
-        # knowing where the spaces are at
+        # getting to know where the spaces are at
+        #print('here', tokenized_sentence, sent)
         sent_spans = align_tokens(tokenized_sentence, sent)
         sent_diffs = [sent_spans[0][0] - 0]; old_span = sent_spans[0];
         for i, span in enumerate(sent_spans[1:]):
@@ -62,27 +74,40 @@ def predict_for_paragraph(input_paragraph, model, batch_size=32, tokenizer_metho
         
         batch.append(tokenized_sentence)
         if len(batch) == batch_size:
-            preds, cnt = model.handle_batch(batch)
+            preds, labels, cnt = model.handle_batch(batch)
             predictions.extend(preds)
             cnt_corrections += cnt
             batch = []
     if batch:
-        preds, cnt = model.handle_batch(batch)
+        preds, labels, cnt = model.handle_batch(batch)
         predictions.extend(preds)
         cnt_corrections += cnt
 
+    print('cnt:', cnt_corrections)
+    
+    # removing the first label which is for the SENT_START token
+    labels = [x[1:] for x in labels]
+    # defining regex patterns for later
+    re1S = re.compile(r'VM.[23][SP]_VM.1[S]$'); re2S = re.compile(r'VM.[13][SP]_VM.2[S]$');
+    re1P = re.compile(r'VM.[23][SP]_VM.1[P]$'); re2P = re.compile(r'VM.[13][SP]_VM.2[P]$');
+    reEU = re.compile(r'^\'?[Ee][Uu]$'); reTU = re.compile(r'^\'?[Tt][Uu]$');
+    reEUNOS = re.compile(r'^\'?([Ee][Uu]|[Nn][óÓ][sS])$'); reTUVOS = re.compile(r'^\'?([Tt][Uu]|[Vv][óÓ][sS])$');
+    regexp_dic = {'1S':[re1S,reEU], '2S':[re2S,reTU], '1P':[re1P,reEUNOS], '2P':[re2P,reTUVOS]}
     # obtain a dictionary with replacements
     repl = dict()
-    for sent_pos, tokens_in, tokens_out, spaces_lengths in zip(split_positions, tokenized_sentences, predictions, diffs):
+    for sent_pos, tokens_in, tokens_out, spaces_lengths, sent_labels in zip(split_positions, tokenized_sentences, predictions, diffs, labels):
         past_token_in = ''
-        for i, (token_in, token_out, space_length) in enumerate(zip(tokens_in, tokens_out, spaces_lengths)):
+        for i, (token_in, token_out, space_length, sent_label) in enumerate(zip(tokens_in, tokens_out, spaces_lengths, sent_labels)):
+            replace = removeFalsePositives(sent_label, tokens_in, regexp_dic)
             if i == 0:
                 pos = space_length + sent_pos[0]
             elif i > 0:
                 pos += len(past_token_in) + space_length
             if token_in != token_out:
                 length = len(token_in)
-                repl[(token_in,pos)] = (pos, length, token_out)
+                if replace:
+                    #print(token_in, token_out, sent_label)
+                    repl[(token_in,pos)] = (pos, length, token_out)
             
             past_token_in = token_in
 
