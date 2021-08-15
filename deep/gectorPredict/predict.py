@@ -88,8 +88,8 @@ def predict_for_paragraph(input_paragraph, model, batch_size=32, tokenizer_metho
     # removing the first label which is for the SENT_START token
     labels = [x[1:] for x in labels]
     # defining regex patterns for later
-    re1S = re.compile(r'VM.[23][SP]_VM.1[S]$'); re2S = re.compile(r'VM.[13][SP]_VM.2[S]$');
-    re1P = re.compile(r'VM.[23][SP]_VM.1[P]$'); re2P = re.compile(r'VM.[13][SP]_VM.2[P]$');
+    re1S = re.compile(r'VM.([1][P]|[23][SP])_VM.1[S]$'); re2S = re.compile(r'VM.([2][P]|[13][SP])_VM.2[S]$');
+    re1P = re.compile(r'VM.([1][S]|[23][SP])_VM.1[P]$'); re2P = re.compile(r'VM.([2][S]|[13][SP])_VM.2[P]$');
     reEU = re.compile(r'^\'?[Ee][Uu]$'); reTU = re.compile(r'^\'?[Tt][Uu]$');
     reEUNOS = re.compile(r'^\'?([Ee][Uu]|[Nn][óÓ][sS])$'); reTUVOS = re.compile(r'^\'?([Tt][Uu]|[Vv][óÓ][sS])$');
     regexp_dic = {'1S':[re1S,reEU], '2S':[re2S,reTU], '1P':[re1P,reEUNOS], '2P':[re2P,reTUVOS]}

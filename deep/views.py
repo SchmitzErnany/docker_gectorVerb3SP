@@ -44,13 +44,13 @@ def output(request):
 
 	# creating a pretty JSON for exporting
 	json_output = dict()
-	json_output['software'] = {'deep3SPVersion':'0.6'}
+	json_output['software'] = {'deep3SPVersion':'0.7'}
 	json_output['warnings'] = {'incompleteResults':False}
 	json_output['language'] = {'name':'Portuguese (Deep SymFree)'}
 	json_output['matches'] = []
 	for i, (key, value) in enumerate(zip(repl.keys(), repl.values())):
 	    match_dict = dict()
-	    match_dict['message'] = 'Possível erro de concordância. Considere a alternativa.'
+	    match_dict['message'] = 'O verbo <marker>' + request_string[value[0]:value[0]+value[1]] + '</marker> não concorda com o resto da frase ou não é frequentemente utilizado neste contexto. Considere a alternativa.'
 	    match_dict['incorrectExample'] = 'As pessoas faz um bolo em casa.'
 	    match_dict['correctExample'] = 'As pessoas fazem um bolo em casa.'
 	    match_dict['shortMessage'] = 'Modifique a forma verbal'
