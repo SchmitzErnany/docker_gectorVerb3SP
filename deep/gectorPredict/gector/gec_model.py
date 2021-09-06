@@ -153,10 +153,18 @@ class GecBERTModel(object):
     def get_token_action(self, token, index, error_prob, prob, sugg_token):
         """Get lost of suggested actions for token."""
         # cases when we don't need to do anything
-        if (prob < self.min_error_probability or error_prob < self.min_error_probability) or sugg_token in [UNK, PAD, '$KEEP']:
+        if (
+            prob < self.min_error_probability or error_prob < self.min_error_probability
+        ) or sugg_token in [UNK, PAD, "$KEEP"]:
             return None
-
-        if sugg_token.startswith('$REPLACE_') or sugg_token.startswith('$TRANSFORM_') or sugg_token == '$DELETE':
+        
+        if (
+            sugg_token.startswith("$REPLACE_")
+            or sugg_token.startswith("$TRANSFORM_")
+            or sugg_token == "$DELETE"
+            or sugg_token == "$ADDCOMMA"
+            or sugg_token == "$REMOVECOMMA"
+        ):
             start_pos = index
             end_pos = index + 1
         elif sugg_token.startswith("$APPEND_") or sugg_token.startswith("$MERGE_"):
@@ -165,10 +173,16 @@ class GecBERTModel(object):
 
         if sugg_token == "$DELETE":
             sugg_token_clear = ""
-        elif sugg_token.startswith('$TRANSFORM_') or sugg_token.startswith("$MERGE_"):
+        elif sugg_token.startswith("$TRANSFORM_") or sugg_token.startswith("$MERGE_"):
             sugg_token_clear = sugg_token[:]
+        elif sugg_token == "$ADDCOMMA":
+            sugg_token_clear = token[:] + ","
+        elif sugg_token == "$REMOVECOMMA" and token[-1] == ',':
+            sugg_token_clear = token[:-1]
+        elif sugg_token == "$REMOVECOMMA" and token[-1] != ',':
+            return None
         else:
-            sugg_token_clear = sugg_token[sugg_token.index('_') + 1:]
+            sugg_token_clear = sugg_token[sugg_token.index("_") + 1 :]
 
         return start_pos - 1, end_pos - 1, sugg_token_clear, prob
 

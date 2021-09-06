@@ -1,4 +1,9 @@
-from deep.gectorPredict.predict import predict_for_paragraph
+from deep.gectorPredict.predict import (
+    predict_for_paragraph,
+    message,
+    short_message,
+    examples,
+)
 from deep.gectorPredict.gector.gec_model import GecBERTModel
 from django.http import JsonResponse
 import os
@@ -6,7 +11,7 @@ from kernel.settings import BASE_DIR
 
 ### Initializing the model
 
-MIN_ERR_PROB = 0.7; ADD_CONF = 0.3; TOKEN_METH = 'spacy';
+MIN_ERR_PROB = 0.7; ADD_CONF = 0.3; TOKEN_METH = 'split+spacy';
 if os.environ.get('min_err_prob'):
 	MIN_ERR_PROB = float(os.environ.get('min_err_prob'))
 if os.environ.get('add_conf'):
@@ -44,26 +49,38 @@ def output(request):
 
 	# creating a pretty JSON for exporting
 	json_output = dict()
-	json_output['software'] = {'deep3SPVersion':'0.7'}
+	json_output['software'] = {'deep3SPVersion':'0.9'}
 	json_output['warnings'] = {'incompleteResults':False}
 	json_output['language'] = {'name':'Portuguese (Deep SymFree)'}
 	json_output['matches'] = []
 	for i, (key, value) in enumerate(zip(repl.keys(), repl.values())):
+	    original_token = request_string[value[0] : value[0] + value[1]]
+	    replacement = value[2]
+	    offset = value[0]
+	    length = value[1]
 	    match_dict = dict()
-	    match_dict['message'] = 'O verbo <marker>' + request_string[value[0]:value[0]+value[1]] + '</marker> não concorda com o resto da frase ou não é frequentemente utilizado neste contexto. Considere a alternativa.'
-	    match_dict['incorrectExample'] = 'As pessoas faz um bolo em casa.'
-	    match_dict['correctExample'] = 'As pessoas fazem um bolo em casa.'
-	    match_dict['shortMessage'] = 'Modifique a forma verbal'
-	    match_dict['replacements'] = [{'value':value[2]}]
-	    match_dict['offset'] = value[0]
-	    match_dict['length'] = value[1]
-	    match_dict['context'] = {'text':request_string, 'offset':value[0], 'length':value[1]}
-	    match_dict['sentence'] = request_string
-	    match_dict['type'] = {'typeName':'Hint'}
-	    match_dict['rule'] = {'id':'DEEP_VERB_3SP', 'subId':0, 'sourceFile': 'not well defined', 'description': 'Deep learning rules for the 3rd person Singular-Plural', 'issueType':'grammar', 'category':{'id':'SymFree_DEEP_1' , 'name':'Deep learning rules (SymFree 1)'}}
-	    match_dict['ignoreForIncompleteSentence'] = False
-	    match_dict['contextForSureMatch'] = -1
-	    json_output['matches'].append(match_dict)
+	    match_dict["message"] = message(original_token, replacement)
+	    match_dict["incorrectExample"] = examples(original_token, replacement)[0]
+	    match_dict["correctExample"] = examples(original_token, replacement)[1]
+	    match_dict["shortMessage"] = short_message(original_token, replacement)
+	    match_dict["replacements"] = [{"value": replacement}]
+	    match_dict["offset"] = offset
+	    match_dict["length"] = length
+	    match_dict["context"] = {"text": request_string, "offset": offset, "length": length}
+	    match_dict["sentence"] = request_string
+	    match_dict["type"] = {"typeName": "Hint"}
+	    match_dict["rule"] = {
+	        "id": "DEEP_VERB_3SP",
+	        "subId": 0,
+	        "sourceFile": "not well defined",
+	        "tokenizer": value[3],
+	        "description": "Deep learning rules for the 3rd person Singular-Plural",
+	        "issueType": "grammar",
+	        "category": {"id": "SymFree_DEEP_1", "name": "Deep learning rules (SymFree 1)"},
+	    }
+	    match_dict["ignoreForIncompleteSentence"] = False
+	    match_dict["contextForSureMatch"] = -1
+	    json_output["matches"].append(match_dict)
 
 	return JsonResponse(json_output, json_dumps_params={'ensure_ascii': False})
 
