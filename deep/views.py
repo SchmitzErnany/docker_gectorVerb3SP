@@ -49,7 +49,7 @@ def output(request):
 
 	# creating a pretty JSON for exporting
 	json_output = dict()
-	json_output['software'] = {'deep3SPVersion':'0.9'}
+	json_output['software'] = {'deep3SPVersion':'1.0'}
 	json_output['warnings'] = {'incompleteResults':False}
 	json_output['language'] = {'name':'Portuguese (Deep SymFree)'}
 	json_output['matches'] = []
