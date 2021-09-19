@@ -32,13 +32,13 @@ def message(original_token, replacements):
     comma_msg = f"Possível erro de vírgula. Considere a alternativa."
 
     other_replace_condition = any(
-        original_token == tok for tok in ["e", "esta", "da", "mal", "mau"]
+        original_token.lower() == tok for tok in ["e", "esta", "da", "mal", "mau"]
     )
-    crase_condition_1 = any(original_token == tok for tok in ["à", "às"]) and any(
-        replacement == tok for tok in ["a", "as"]
+    crase_condition_1 = any(original_token.lower() == tok for tok in ["à", "às"]) and any(
+        replacement.lower() == tok for tok in ["a", "as"]
     )
-    crase_condition_2 = any(original_token == tok for tok in ["a", "as"]) and any(
-        replacement == tok for tok in ["à", "às"]
+    crase_condition_2 = any(original_token.lower() == tok for tok in ["a", "as"]) and any(
+        replacement.lower() == tok for tok in ["à", "às"]
     )
     comma_condition_1 = original_token[-1] == "," and replacement[-1] != ","
     comma_condition_2 = original_token[-1] != "," and replacement[-1] == ","
@@ -66,13 +66,13 @@ def short_message(original_token, replacements):
     comma_short_msg = f"Erro de vírgula"
 
     other_replace_condition = any(
-        original_token == tok for tok in ["e", "esta", "da", "mal", "mau"]
+        original_token.lower() == tok for tok in ["e", "esta", "da", "mal", "mau"]
     )
-    crase_condition_1 = any(original_token == tok for tok in ["à", "às"]) and any(
-        replacement == tok for tok in ["a", "as"]
+    crase_condition_1 = any(original_token.lower() == tok for tok in ["à", "às"]) and any(
+        replacement.lower() == tok for tok in ["a", "as"]
     )
-    crase_condition_2 = any(original_token == tok for tok in ["a", "as"]) and any(
-        replacement == tok for tok in ["à", "às"]
+    crase_condition_2 = any(original_token.lower() == tok for tok in ["a", "as"]) and any(
+        replacement.lower() == tok for tok in ["à", "às"]
     )
     comma_condition_1 = original_token[-1] == "," and replacement[-1] != ","
     comma_condition_2 = original_token[-1] != "," and replacement[-1] == ","
@@ -104,13 +104,13 @@ def examples(original_token, replacements):
     comma_correct_example = f"Ele foi ao mercado."
 
     other_replace_condition = any(
-        original_token == tok for tok in ["e", "esta", "da", "mal", "mau"]
+        original_token.lower() == tok for tok in ["e", "esta", "da", "mal", "mau"]
     )
-    crase_condition_1 = any(original_token == tok for tok in ["à", "às"]) and any(
-        replacement == tok for tok in ["a", "as"]
+    crase_condition_1 = any(original_token.lower() == tok for tok in ["à", "às"]) and any(
+        replacement.lower() == tok for tok in ["a", "as"]
     )
-    crase_condition_2 = any(original_token == tok for tok in ["a", "as"]) and any(
-        replacement == tok for tok in ["à", "às"]
+    crase_condition_2 = any(original_token.lower() == tok for tok in ["a", "as"]) and any(
+        replacement.lower() == tok for tok in ["à", "às"]
     )
     comma_condition_1 = original_token[-1] == "," and replacement[-1] != ","
     comma_condition_2 = original_token[-1] != "," and replacement[-1] == ","
