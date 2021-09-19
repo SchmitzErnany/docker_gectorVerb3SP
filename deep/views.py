@@ -1,3 +1,4 @@
+
 from deep.gectorPredict.predict import (
     predict_for_paragraph,
     replacements_to_json,
@@ -5,10 +6,16 @@ from deep.gectorPredict.predict import (
 from deep.gectorPredict.gector.gec_model import GecBERTModel
 from django.http import JsonResponse
 import os
+import json
 from kernel.settings import BASE_DIR
 
-### Initializing the model
+# fetches the desired image version of the app
+image_version_path = os.path.join(BASE_DIR, "image_version.json")
+with open(image_version_path) as file:
+    image_version_json = json.load(file)
+IMAGE_VERSION = image_version_json['version']
 
+### Initializing the model
 MIN_ERR_PROB = {"all": 0.7, "comma": 0.8}
 ADD_CONF = 0.3
 TOKEN_METH = "split+spacy"
@@ -66,7 +73,7 @@ def output(request):
         tokenizer_method=TOKEN_METH,
     )
     json_output = replacements_to_json(
-        version="1.0",
+        version=IMAGE_VERSION,
         request_string=request_string,
         replacements_dictionary=repl,
     )
