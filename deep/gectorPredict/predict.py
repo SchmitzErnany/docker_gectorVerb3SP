@@ -1,6 +1,6 @@
 import argparse, re, os
 
-from deep.gectorPredict.utils.helpers import read_lines
+from deep.gectorPredict.utils.helpers import read_lines, DECODE_VERB_DICT_MULTI
 from deep.gectorPredict.gector.gec_model import GecBERTModel
 from kernel.settings import BASE_DIR
 
@@ -19,8 +19,14 @@ special_case = [{ORTH: "às"}]
 spacy_tokenizer.tokenizer.add_special_case("às", special_case)
 
 
-def message(original_token, replacement):
+def message(original_token, replacements):
     verb_msg = f"O verbo <marker>{original_token}</marker> não concorda com o resto da frase ou não é frequentemente utilizado neste contexto. Considere a alternativa."
+
+    if len(replacements) > 1:
+        return verb_msg
+    else:
+        replacement = replacements[0]
+
     other_msg = f'A palavra <marker>{original_token}</marker> pode ter sido confundida com a palavra "{replacement}".'
     crase_msg = f"Possível erro de crase. Considere a alternativa."
     comma_msg = f"Possível erro de vírgula. Considere a alternativa."
@@ -47,8 +53,14 @@ def message(original_token, replacement):
     return verb_msg
 
 
-def short_message(original_token, replacement):
+def short_message(original_token, replacements):
     verb_short_msg = f"Modifique a forma verbal"
+
+    if len(replacements) > 1:
+        return verb_short_msg
+    else:
+        replacement = replacements[0]
+
     other_short_msg = f"Modifique a palavra"
     crase_short_msg = f"Erro de crase"
     comma_short_msg = f"Erro de vírgula"
@@ -75,9 +87,15 @@ def short_message(original_token, replacement):
     return verb_short_msg
 
 
-def examples(original_token, replacement):
+def examples(original_token, replacements):
     verb_incorrect_example = f"Minha mãe fizeram dois bolos."
     verb_correct_example = f"Minha mãe fez dois bolos."
+
+    if len(replacements) > 1:
+        return verb_incorrect_example, verb_correct_example
+    else:
+        replacement = replacements[0]
+
     other_incorrect_example = f"Essa pessoa esta muito irritada."
     other_correct_example = f"Essa pessoa está muito irritada."
     crase_incorrect_example = f"Eu fui as compras no supermercado."
@@ -198,7 +216,7 @@ def predict_for_paragraph(
             predictions.extend(preds)
             cnt_corrections += cnt
 
-        print("number of iterations:", cnt_corrections, " | tokenizer:", method)
+        #print("number of iterations:", cnt_corrections, " | tokenizer:", method)
 
         # removing the first label which is for the SENT_START token
         labels = [x[1:] for x in labels]
@@ -236,12 +254,70 @@ def predict_for_paragraph(
                 if token_in != token_out:
                     length = len(token_in)
                     if replace:
-                        repl[(token_in, pos)] = (pos, length, token_out, method)
+                        if "__9__" not in sent_label and "TRANSFORM_VERB_" in sent_label:
+                            tag1 = sent_label.split("_")[-2]
+                            tag2 = sent_label.split("_")[-1]
+                            possibly_joined_token_out = DECODE_VERB_DICT_MULTI.get(f"{token_in}_{tag1}_{tag2}")
+                            if possibly_joined_token_out != None:
+                                possibly_split_token_out = possibly_joined_token_out.split("__8__")
+                                token_out = possibly_split_token_out
+                        if type(token_out) == str:
+                            token_out = [token_out]
+                        repl[(token_in, pos)] = {
+                            "word_position": pos,
+                            "word_length": length,
+                            "replacements": token_out,
+                            "tokenizer": method,
+                            "transformation_label": sent_label,
+                        }
 
                 past_token_in = token_in
 
         # print('number of corrections:', cnt_corrections)
     return repl
+
+
+
+def replacements_to_json(version, request_string, replacements_dictionary):
+
+    json_output = dict()
+    json_output["software"] = {"deep3SPVersion": version}
+    json_output["warnings"] = {"incompleteResults": False}
+    json_output["language"] = {"name": "Portuguese (Deep SymFree)"}
+    json_output["matches"] = []
+    for key, value in zip(replacements_dictionary.keys(), replacements_dictionary.values()):
+        original_token = key[0]
+        replacements = value["replacements"]
+        offset = value["word_position"]
+        length = value["word_length"]
+        append_id = value["transformation_label"]
+        match_dict = dict()
+        match_dict["message"] = message(original_token, replacements)
+        match_dict["incorrectExample"] = examples(original_token, replacements)[0]
+        match_dict["correctExample"] = examples(original_token, replacements)[1]
+        match_dict["shortMessage"] = short_message(original_token, replacements)
+        match_dict["replacements"] = []
+        for replacement in replacements:
+            match_dict["replacements"].append({"value": replacement})
+        match_dict["offset"] = offset
+        match_dict["length"] = length
+        match_dict["context"] = {"text": request_string, "offset": offset, "length": length}
+        match_dict["sentence"] = request_string
+        match_dict["type"] = {"typeName": "Hint"}
+        match_dict["rule"] = {
+            "id": "DEEP_VERB__" + append_id,
+            "subId": 0,
+            "sourceFile": "not well defined",
+            "tokenizer": value["tokenizer"],
+            "description": "Deep learning rules for verb, replace, comma, etc.",
+            "issueType": "grammar",
+            "category": {"id": "SymFree_DEEP", "name": "Deep learning rules (SymFree)"},
+        }
+        match_dict["ignoreForIncompleteSentence"] = False
+        match_dict["contextForSureMatch"] = -1
+        json_output["matches"].append(match_dict)
+    return json_output
+
 
 
 def main(args):

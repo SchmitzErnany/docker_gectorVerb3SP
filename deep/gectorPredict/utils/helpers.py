@@ -12,8 +12,10 @@ SEQ_DELIMETERS = {"tokens": " ",
                   "labels": "SEPL|||SEPR",
                   "operations": "SEPL__SEPR"}
 
+multiple_replacements = False # when one decodes the transformation, there might be more than one replacement to consider, e.g. 'trago' -> 'tragam' (tragar); 'trazem' (trazer).
 
-def get_verb_form_dicts():
+
+def get_verb_form_dicts(decode_list=False): 
     path_to_dict = os.path.join(VOCAB_DIR, "verb-form-vocab.txt")
     encode, decode = {}, {}
     with open(path_to_dict, encoding="utf-8") as f:
@@ -22,13 +24,32 @@ def get_verb_form_dicts():
             word1, word2 = words.split("_")
             tag1, tag2 = tags.split("_")
             decode_key = f"{word1}_{tag1}_{tag2.strip()}"
+            # decode_key_upper = f"{word1.capitalize()}_{tag1}_{tag2.strip()}"
             if decode_key not in decode:
                 encode[words] = tags
-                decode[decode_key] = word2
+                # words_upper = word1.capitalize() + '_' + word2.capitalize()
+                # encode[words_upper] = tags
+                if decode_list:
+                    decode[decode_key] = word2
+                    # decode[decode_key_upper] = [word2.capitalize()]
+                else:
+                    decode[decode_key] = word2
+                    # decode[decode_key_upper] = word2.capitalize()
+            # (below condition) introduced by ERS to accept encoding from the 2 forms VMI[IP]1S0 into the VMI[IP]1P0. This change removes many of undesired labels 'REPLACE_admitiu', for example.
+            elif decode_key in decode and words not in encode:
+                encode[words] = tags
+                # words_upper = word1.capitalize() + '_' + word2.capitalize()
+                # encode[words_upper] = tags
+                if decode_list and word2 not in decode[decode_key]:
+                    decode[decode_key] += "__8__" + word2
+                    # decode[decode_key_upper].append(word2.capitalize())
+
+
     return encode, decode
 
 
-ENCODE_VERB_DICT, DECODE_VERB_DICT = get_verb_form_dicts()
+ENCODE_VERB_DICT, DECODE_VERB_DICT = get_verb_form_dicts(decode_list=multiple_replacements)
+ENCODE_VERB_DICT_MULTI, DECODE_VERB_DICT_MULTI = get_verb_form_dicts(decode_list=True)
 
 
 def get_target_sent_by_edits(source_tokens, edits):

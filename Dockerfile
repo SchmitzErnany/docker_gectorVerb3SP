@@ -22,5 +22,5 @@ RUN apt-get update && apt-get install -y build-essential && pip3 install --upgra
 
 # Run app.py when the container launches
 COPY  .  /app1/
-ENV min_err_prob=0.7 add_conf=0.3 tokenizer_method=split+spacy
+ENV min_err_prob_all=0.7 min_error_prob_comma=0.8 add_conf=0.3 tokenizer_method=split+spacy
 CMD ["python3","manage.py","runserver","--noreload","0.0.0.0:8000"]
