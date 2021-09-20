@@ -72,7 +72,12 @@ class GecBERTModel(object):
         model_name="roberta",
         special_tokens_fix=1,
         is_ensemble=True,
-        min_error_probability={"all": 0.0, "comma": 0.0, "addcrase": 0.0},
+        min_error_probability={
+            "all": 0.0,
+            "comma": 0.0,
+            "addcrase": 0.0,
+            "uppercase_into_3S": 0.0,
+        },
         confidence=0,
         resolve_cycles=False,
     ):
@@ -174,6 +179,14 @@ class GecBERTModel(object):
             if (
                 prob < self.min_error_probability["comma"]
                 or error_prob < self.min_error_probability["comma"]
+            ):
+                return None
+        elif (
+            sugg_token.startswith("$TRANSFORM_VERB_") and sugg_token.endswith("3S")
+        ) and token[0].isupper():
+            if (
+                prob < self.min_error_probability["uppercase_into_3S"]
+                or error_prob < self.min_error_probability["uppercase_into_3S"]
             ):
                 return None
         elif any(

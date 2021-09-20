@@ -1,4 +1,3 @@
-
 from deep.gectorPredict.predict import (
     predict_for_paragraph,
     replacements_to_json,
@@ -13,16 +12,22 @@ from kernel.settings import BASE_DIR
 image_version_path = os.path.join(BASE_DIR, "image_version.json")
 with open(image_version_path) as file:
     image_version_json = json.load(file)
-IMAGE_VERSION = image_version_json['version']
+IMAGE_VERSION = image_version_json["version"]
 
 ### Initializing the model
-MIN_ERR_PROB = {"all": 0.8, "comma": 0.8, "addcrase": 0.6}
+MIN_ERR_PROB = {
+    "all": 0.8,
+    "comma": 0.8,
+    "addcrase": 0.6,
+    "uppercase_into_3S": 0.97,
+}
 ADD_CONF = 0.3
 TOKEN_METH = "split+spacy"
 if os.environ.get("min_err_prob_all") and os.environ.get("min_err_prob_comma"):
     MIN_ERR_PROB["all"] = float(os.environ.get("min_err_prob_all"))
     MIN_ERR_PROB["comma"] = float(os.environ.get("min_err_prob_comma"))
     MIN_ERR_PROB["addcrase"] = float(os.environ.get("min_err_prob_addcrase"))
+    MIN_ERR_PROB["uppercase_into_3S"] = float(os.environ.get("min_err_prob_uppercase_into_3S"))
 if os.environ.get("add_conf"):
     ADD_CONF = float(os.environ.get("add_conf"))
 if os.environ.get("tokenizer_method"):
