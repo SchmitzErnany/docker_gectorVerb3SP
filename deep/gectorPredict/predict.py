@@ -101,8 +101,8 @@ def examples(original_token, replacements, label):
     crase_correct_example = f"Eu fui às compras no supermercado."
     comma_incorrect_example = f"Ele foi ao, mercado."
     comma_correct_example = f"Ele foi ao mercado."
-    failsafe_incorrect_example = None
-    failsafe_correct_example = None
+    failsafe_incorrect_example = f"Eles esta aqui por causa da reunião."
+    failsafe_correct_example = f"Eles estão aqui por causa da reunião."
 
     examples_dictionary = {
         "other": (other_incorrect_example, other_correct_example),
