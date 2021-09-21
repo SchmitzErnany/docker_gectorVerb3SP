@@ -19,110 +19,102 @@ special_case = [{ORTH: "às"}]
 spacy_tokenizer.tokenizer.add_special_case("às", special_case)
 
 
-def message(original_token, replacements):
-    verb_msg = f"O verbo <marker>{original_token}</marker> não concorda com o resto da frase ou não é frequentemente utilizado neste contexto. Considere a alternativa."
-
+def which_condition(original_token, replacements, label):
     if len(replacements) > 1:
-        return verb_msg
-    else:
-        replacement = replacements[0]
+        return "verb"
 
-    other_msg = f'A palavra <marker>{original_token}</marker> pode ter sido confundida com a palavra "{replacement}".'
-    crase_msg = f"Possível erro de crase. Considere a alternativa."
-    comma_msg = f"Possível erro de vírgula. Considere a alternativa."
+    replacement = replacements[0]
 
     other_replace_condition = any(
         original_token.lower() == tok for tok in ["e", "esta", "da", "mal", "mau"]
     )
-    crase_condition_1 = any(original_token.lower() == tok for tok in ["à", "às"]) and any(
-        replacement.lower() == tok for tok in ["a", "as"]
-    )
-    crase_condition_2 = any(original_token.lower() == tok for tok in ["a", "as"]) and any(
-        replacement.lower() == tok for tok in ["à", "às"]
-    )
+    crase_condition_1 = any(
+        original_token.lower() == tok for tok in ["à", "às"]
+    ) and any(replacement.lower() == tok for tok in ["a", "as"])
+    crase_condition_2 = any(
+        original_token.lower() == tok for tok in ["a", "as"]
+    ) and any(replacement.lower() == tok for tok in ["à", "às"])
     comma_condition_1 = original_token[-1] == "," and replacement[-1] != ","
     comma_condition_2 = original_token[-1] != "," and replacement[-1] == ","
+    verb_condition = label.startswith("$TRANSFORM_VERB_")
+    failsafe_condition = len(label.split("__9__")) > 1
 
-    if other_replace_condition:
-        return other_msg
-    elif crase_condition_1 or crase_condition_2:
-        return crase_msg
-    elif comma_condition_1 or comma_condition_2:
-        return comma_msg
+    if not failsafe_condition:
+        if other_replace_condition:
+            return "other"
+        elif crase_condition_1 or crase_condition_2:
+            return "crase"
+        elif comma_condition_1 or comma_condition_2:
+            return "comma"
+        elif verb_condition:
+            return "verb"
 
-    return verb_msg
+    return "failsafe"
 
 
-def short_message(original_token, replacements):
+def message(original_token, replacements, label):
+    verb_msg = f"O verbo <marker>{original_token}</marker> não concorda com o resto da frase ou não é frequentemente utilizado neste contexto. Considere a alternativa."
+    other_msg = f'A palavra <marker>{original_token}</marker> pode ter sido confundida com a palavra "{replacements[0]}".'
+    crase_msg = f"Possível erro de crase. Considere a alternativa."
+    comma_msg = f"Possível erro de vírgula. Considere a alternativa."
+    failsafe_msg = f"A palavra <marker>{original_token}</marker> não encaixa com o resto da frase ou não é frequentemente utilizada neste contexto. Considere a alternativa."
+
+    messages_dictionary = {
+        "other": other_msg,
+        "crase": crase_msg,
+        "comma": comma_msg,
+        "failsafe": failsafe_msg,
+        "verb": verb_msg,
+    }
+
+    message_key = which_condition(original_token, replacements, label)
+
+    return messages_dictionary[message_key]
+
+
+def short_message(original_token, replacements, label):
     verb_short_msg = f"Modifique a forma verbal"
-
-    if len(replacements) > 1:
-        return verb_short_msg
-    else:
-        replacement = replacements[0]
-
     other_short_msg = f"Modifique a palavra"
     crase_short_msg = f"Erro de crase"
     comma_short_msg = f"Erro de vírgula"
+    failsafe_short_msg = f"Modifique a palavra"
 
-    other_replace_condition = any(
-        original_token.lower() == tok for tok in ["e", "esta", "da", "mal", "mau"]
-    )
-    crase_condition_1 = any(original_token.lower() == tok for tok in ["à", "às"]) and any(
-        replacement.lower() == tok for tok in ["a", "as"]
-    )
-    crase_condition_2 = any(original_token.lower() == tok for tok in ["a", "as"]) and any(
-        replacement.lower() == tok for tok in ["à", "às"]
-    )
-    comma_condition_1 = original_token[-1] == "," and replacement[-1] != ","
-    comma_condition_2 = original_token[-1] != "," and replacement[-1] == ","
+    short_messages_dictionary = {
+        "other": other_short_msg,
+        "crase": crase_short_msg,
+        "comma": comma_short_msg,
+        "failsafe": failsafe_short_msg,
+        "verb": verb_short_msg,
+    }
 
-    if other_replace_condition:
-        return other_short_msg
-    elif crase_condition_1 or crase_condition_2:
-        return crase_short_msg
-    elif comma_condition_1 or comma_condition_2:
-        return comma_short_msg
+    short_message_key = which_condition(original_token, replacements, label)
 
-    return verb_short_msg
+    return short_messages_dictionary[short_message_key]
 
 
-def examples(original_token, replacements):
+def examples(original_token, replacements, label):
     verb_incorrect_example = f"Minha mãe fizeram dois bolos."
     verb_correct_example = f"Minha mãe fez dois bolos."
-
-    if len(replacements) > 1:
-        return verb_incorrect_example, verb_correct_example
-    else:
-        replacement = replacements[0]
-
     other_incorrect_example = f"Essa pessoa esta muito irritada."
     other_correct_example = f"Essa pessoa está muito irritada."
     crase_incorrect_example = f"Eu fui as compras no supermercado."
     crase_correct_example = f"Eu fui às compras no supermercado."
     comma_incorrect_example = f"Ele foi ao, mercado."
     comma_correct_example = f"Ele foi ao mercado."
+    failsafe_incorrect_example = None
+    failsafe_correct_example = None
 
-    other_replace_condition = any(
-        original_token.lower() == tok for tok in ["e", "esta", "da", "mal", "mau"]
-    )
-    crase_condition_1 = any(original_token.lower() == tok for tok in ["à", "às"]) and any(
-        replacement.lower() == tok for tok in ["a", "as"]
-    )
-    crase_condition_2 = any(original_token.lower() == tok for tok in ["a", "as"]) and any(
-        replacement.lower() == tok for tok in ["à", "às"]
-    )
-    comma_condition_1 = original_token[-1] == "," and replacement[-1] != ","
-    comma_condition_2 = original_token[-1] != "," and replacement[-1] == ","
+    examples_dictionary = {
+        "other": (other_incorrect_example, other_correct_example),
+        "crase": (crase_incorrect_example, crase_correct_example),
+        "comma": (comma_incorrect_example, comma_correct_example),
+        "failsafe": (failsafe_incorrect_example, failsafe_correct_example),
+        "verb": (verb_incorrect_example, verb_correct_example),
+    }
 
-    if other_replace_condition:
-        return other_incorrect_example, other_correct_example
-    elif crase_condition_1 or crase_condition_2:
-        return crase_incorrect_example, crase_correct_example
-    elif comma_condition_1 or comma_condition_2:
-        return comma_incorrect_example, comma_correct_example
+    example_key = which_condition(original_token, replacements, label)
 
-    return verb_incorrect_example, verb_correct_example
+    return examples_dictionary[example_key]
 
 
 def predict_for_file(input_file, output_file, model, batch_size=32):
@@ -216,7 +208,7 @@ def predict_for_paragraph(
             predictions.extend(preds)
             cnt_corrections += cnt
 
-        #print("number of iterations:", cnt_corrections, " | tokenizer:", method)
+        # print("number of iterations:", cnt_corrections, " | tokenizer:", method)
 
         # removing the first label which is for the SENT_START token
         labels = [x[1:] for x in labels]
@@ -254,12 +246,19 @@ def predict_for_paragraph(
                 if token_in != token_out:
                     length = len(token_in)
                     if replace:
-                        if "__9__" not in sent_label and "TRANSFORM_VERB_" in sent_label:
+                        if (
+                            "__9__" not in sent_label
+                            and "TRANSFORM_VERB_" in sent_label
+                        ):
                             tag1 = sent_label.split("_")[-2]
                             tag2 = sent_label.split("_")[-1]
-                            possibly_joined_token_out = DECODE_VERB_DICT_MULTI.get(f"{token_in}_{tag1}_{tag2}")
+                            possibly_joined_token_out = DECODE_VERB_DICT_MULTI.get(
+                                f"{token_in}_{tag1}_{tag2}"
+                            )
                             if possibly_joined_token_out != None:
-                                possibly_split_token_out = possibly_joined_token_out.split("__8__")
+                                possibly_split_token_out = (
+                                    possibly_joined_token_out.split("__8__")
+                                )
                                 token_out = possibly_split_token_out
                         if type(token_out) == str:
                             token_out = [token_out]
@@ -277,7 +276,6 @@ def predict_for_paragraph(
     return repl
 
 
-
 def replacements_to_json(version, request_string, replacements_dictionary):
 
     json_output = dict()
@@ -285,23 +283,35 @@ def replacements_to_json(version, request_string, replacements_dictionary):
     json_output["warnings"] = {"incompleteResults": False}
     json_output["language"] = {"name": "Portuguese (Deep SymFree)"}
     json_output["matches"] = []
-    for key, value in zip(replacements_dictionary.keys(), replacements_dictionary.values()):
+    for key, value in zip(
+        replacements_dictionary.keys(), replacements_dictionary.values()
+    ):
         original_token = key[0]
         replacements = value["replacements"]
         offset = value["word_position"]
         length = value["word_length"]
         append_id = value["transformation_label"]
         match_dict = dict()
-        match_dict["message"] = message(original_token, replacements)
-        match_dict["incorrectExample"] = examples(original_token, replacements)[0]
-        match_dict["correctExample"] = examples(original_token, replacements)[1]
-        match_dict["shortMessage"] = short_message(original_token, replacements)
+        match_dict["message"] = message(original_token, replacements, append_id)
+        match_dict["incorrectExample"] = examples(
+            original_token, replacements, append_id
+        )[0]
+        match_dict["correctExample"] = examples(
+            original_token, replacements, append_id
+        )[1]
+        match_dict["shortMessage"] = short_message(
+            original_token, replacements, append_id
+        )
         match_dict["replacements"] = []
         for replacement in replacements:
             match_dict["replacements"].append({"value": replacement})
         match_dict["offset"] = offset
         match_dict["length"] = length
-        match_dict["context"] = {"text": request_string, "offset": offset, "length": length}
+        match_dict["context"] = {
+            "text": request_string,
+            "offset": offset,
+            "length": length,
+        }
         match_dict["sentence"] = request_string
         match_dict["type"] = {"typeName": "Hint"}
         match_dict["rule"] = {
@@ -317,7 +327,6 @@ def replacements_to_json(version, request_string, replacements_dictionary):
         match_dict["contextForSureMatch"] = -1
         json_output["matches"].append(match_dict)
     return json_output
-
 
 
 def main(args):
