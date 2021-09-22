@@ -15,23 +15,33 @@ with open(image_version_path) as file:
 IMAGE_VERSION = image_version_json["version"]
 
 ### Initializing the model
-MIN_ERR_PROB = {
+MIN_ERR_PROB_DEFAULT = {
     "all": 0.8,
     "comma": 0.8,
     "addcrase": 0.6,
     "uppercase_into_3S": 0.97,
 }
-ADD_CONF = 0.3
-TOKEN_METH = "split+spacy"
-if os.environ.get("min_err_prob_all") and os.environ.get("min_err_prob_comma"):
-    MIN_ERR_PROB["all"] = float(os.environ.get("min_err_prob_all"))
-    MIN_ERR_PROB["comma"] = float(os.environ.get("min_err_prob_comma"))
-    MIN_ERR_PROB["addcrase"] = float(os.environ.get("min_err_prob_addcrase"))
-    MIN_ERR_PROB["uppercase_into_3S"] = float(os.environ.get("min_err_prob_uppercase_into_3S"))
-if os.environ.get("add_conf"):
-    ADD_CONF = float(os.environ.get("add_conf"))
-if os.environ.get("tokenizer_method"):
-    TOKEN_METH = str(os.environ.get("tokenizer_method"))
+ADD_CONF_DEFAULT = 0.3
+TOKEN_METH_DEFAULT = "split+spacy"
+
+MIN_ERR_PROB = {}
+MIN_ERR_PROB["all"] = float(
+    os.environ.get("min_err_prob_all") or MIN_ERR_PROB_DEFAULT["all"]
+)
+MIN_ERR_PROB["comma"] = float(
+    os.environ.get("min_err_prob_comma") or MIN_ERR_PROB_DEFAULT["comma"]
+)
+MIN_ERR_PROB["addcrase"] = float(
+    os.environ.get("min_err_prob_addcrase") or MIN_ERR_PROB_DEFAULT["addcrase"]
+)
+MIN_ERR_PROB["uppercase_into_3S"] = float(
+    os.environ.get("min_err_prob_uppercase_into_3S")
+    or MIN_ERR_PROB_DEFAULT["uppercase_into_3S"]
+)
+ADD_CONF = float(os.environ.get("add_conf") or ADD_CONF_DEFAULT)
+TOKEN_METH = str(os.environ.get("tokenizer_method") or TOKEN_METH_DEFAULT)
+
+print(MIN_ERR_PROB, ADD_CONF, TOKEN_METH)
 
 args = {
     "vocab_path": os.path.join(BASE_DIR, "deep/gectorPredict/MODEL_DIR/vocabulary"),
@@ -47,7 +57,7 @@ args = {
     "is_ensemble": 0,
     "weights": None,
 }
-print(MIN_ERR_PROB)
+
 model = GecBERTModel(
     model_paths=args["model_path"],
     vocab_path=args["vocab_path"],
