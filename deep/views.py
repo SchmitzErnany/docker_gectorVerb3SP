@@ -80,7 +80,7 @@ def output(request):
     if request.method == "GET":
         request_string = str(request.GET.get("text"))
     if request.method == "POST":
-        request_string = str(request.POST.get("text"))
+        request_string = str(json.loads(request.body).get("text"))
 
     # making inference
     repl = predict_for_paragraph(
